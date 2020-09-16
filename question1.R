@@ -60,5 +60,5 @@ pipeline <- function(df, factors, sc_data) {
 }
 
 pipeline(sc_data[,11:23], 3, sc_data)
-# pipeline(sc_data[,24:34], 3, sc_data)
+pipeline(sc_data[,24:34], 3, sc_data)
 
