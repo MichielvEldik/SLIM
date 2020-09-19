@@ -1,0 +1,99 @@
+---
+title: "Question 2 RMarkdown"
+author: "Michiel van Eldik"
+date: "9/18/2020"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setting everything up
+Loading packages from libraries
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+Loading csv file.
+```{r}
+survey_data <- read.csv("/home/mitchy123/Documents/Statistical learning/SLIMSustainableFashionData.csv", sep= ",", header = TRUE)
+sc_data <- survey_data
+```
+
+## Getting to know the data
+### Boxplot
+A multi-facted box plot is a convenient way to get a quick overview of our data.
+```{r}
+boxplot(WTR ~ Education, data = sc_data,
+        xlab = "Education", ylab = "WTR",
+        frame = FALSE, col = c("#00AFBB", "#E7B800", "#FC4E07"))
+```
+To be honest, I don't get much wiser from looking at this. Apart from the fact that it suggests that "5" is not a very common score.
+
+## Table of means, counts, standard deviations per educational level for WTR variable
+```{r}
+new_data <- sc_data %>%
+  group_by(Education) %>%
+  summarise(
+    count = n(),
+    mean = mean(WTR),
+    sd = sd(WTR))
+new_data
+```
+We can conclude from this that the counts per educational level vary with relatively little counts for educational levels 1 and 2. 
+Furthermore, means and standard deviations don't seem to vary significantly. 
+This might foreshadow that Educational level is not a significant factor in predicting willingness to recommend.
+
+## Homogeneity of variances tests 
+An assumption for ANOVA is homogeneity of variances. This can be done in different ways. I chose Bartlett's and the more robust Fligner's test. Levene's test is also an option but I didn't manage to install the package for it correctly as of yet.
+
+### Bartlett's test
+```{r}
+res <- bartlett.test(WTR ~ Education, data = sc_data)
+res
+```
+
+### Fligner's test
+```{r}
+flig <- fligner.test(WTR ~ Education, data = sc_data)
+flig
+```
+Both tests' null hypotheses are homogeneous variances. In either case, we can't reject this null because p-values are too high.
+This means that the variance of variances across educational levels is insignificant.
+
+## Normality
+Another assumption for ANOVA is normality. However, our dependent variable WTR is a discrete variable with only 5 levels that we treat as continuous. Nonetheless, we can take a look at the qq plots.
+
+```{r}
+# Function for plotting qq norms
+WTR_edu_qq <- function(sc_data, edu_level) {
+  newie <- sc_data %>%
+    filter(Education == edu_level)
+  qqnorm(newie$WTR)
+}
+
+# Using the qq norm function by iterating over all education levels
+for (value in c(1, 2, 3, 4)) {
+WTR_edu_qq(sc_data, value)  
+}
+```
+
+## ANOVA one-way
+
+```{r}
+WTR_AOV <- aov(WTR ~ Education, data = sc_data)
+summary(WTR_AOV)
+```
+
+## ANCOVA applied using linear model
+
+```{r}
+model_1 = lm (WTR ~ Education + PurchaseFreq,
+            data = sc_data)
+summary(model_1)
+```
+
+

@@ -1,0 +1,174 @@
+---
+title: "Q1Markdown"
+author: "Michiel van Eldik"
+date: "9/18/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Prepare Everything
+### Load Packages
+
+```{r}
+library(ggplot2)
+library(corrplot)
+library(nFactors)
+library(GPArotation)
+library(gplots)
+
+```
+### Load Survey Data and Make a Copy
+```{r}
+survey_data <- read.csv("/home/mitchy123/Documents/Statistical learning/SLIMSustainableFashionData.csv", sep= ",", header = TRUE)
+sc_data <- survey_data
+
+```
+
+### Standardize Data
+
+```{r}
+sc_data[, 11:34] <- data.frame(scale(sc_data[, 11:34]))
+
+```
+
+
+### Set up functions for communality tests
+#### KMO function
+```{r}
+kmo <- function(x)
+{
+  x <- subset(x, complete.cases(x)) # Omit missing values
+  r <- cor(x) # Correlation matrix
+  r2 <- r^2 # Squared correlation coefficients
+  i <- solve(r) # Inverse matrix of correlation matrix
+  d <- diag(i) # Diagonal elements of inverse matrix
+  p2 <- (-i/sqrt(outer(d, d)))^2 # Squared partial correlation coefficients
+  diag(r2) <- diag(p2) <- 0 # Delete diagonal elements
+  KMO <- sum(r2)/(sum(r2)+sum(p2))
+  MSA <- colSums(r2)/(colSums(r2)+colSums(p2))
+  return(list(KMO=KMO, MSA=MSA))
+}
+```
+#### Bartlett's function
+```{r}
+
+Bartlett.sphericity.test <- function(x)
+{
+  method <- "Bartlett’s test of sphericity"
+  data.name <- deparse(substitute(x))
+  x <- subset(x, complete.cases(x)) # Omit missing values
+  n <- nrow(x)
+  p <- ncol(x)
+  chisq <- (1-n+(2*p+5)/6)*log(det(cor(x)))
+  df <- p*(p-1)/2
+  p.value <- pchisq(chisq, df, lower.tail=FALSE)
+  names(chisq) <- "X-squared"
+  names(df) <- "df"
+  return(structure(list(statistic=chisq, parameter=df, p.value=p.value,
+                        method=method, data.name=data.name), class="htest"))
+}
+```
+
+## Doing stuff
+
+
+```{r}
+pipeline <- function(df, factors, sc_data) {
+  
+  # KMO test
+  print(kmo(df))
+  # Bartlett's test
+  print(Bartlett.sphericity.test(df))
+  
+  # plot correlations
+  cor_sc_data <- cor(df, method = "pearson")
+  corrplot(cor_sc_data)
+  
+  # plot scree diagram
+  nScree(df)
+  
+  # eigen decomposition correlation
+  eigen_dec <- eigen(cor(df))
+  plot(eigen_dec[[1]])
+
+  # Factor analysis using x factors depending on arugment passed
+  print(factanal(df, factors = factors))
+
+  # Orthogonal rotation applied
+  ort_rot <- factanal(df, factors = factors, rotation = "Varimax", scores="Bartlett")
+  print(ort_rot)
+  
+  # Factors 
+  scores <- data.frame(ort_rot$scores)
+  scores$gender <- sc_data$Gender
+  # print(scores)
+  
+  # scores per gender
+  scores_mean <- aggregate(. ~ gender, data = scores, mean)
+  print(scores_mean)
+  heatmap.2(as.matrix(scores_mean))
+}
+```
+
+
+## Output for Q11 to Q23
+```{r}
+# pipeline(sc_data[,11:23], 3, sc_data)
+```
+
+```{r}
+print(kmo(sc_data[,11:23]))
+```
+
+```{r}
+print(Bartlett.sphericity.test(sc_data[,11:23]))
+```
+
+```{r}
+corrplot(cor(sc_data[,11:23], method = "pearson"))
+```
+
+```{r}
+nScree(sc_data[,11:23])
+```
+
+``` {r}
+eigen_dec <- eigen(cor(sc_data[,11:23]))
+plot(eigen_dec[[1]])
+```
+
+Using 3 factors, but you can use different amounts
+``` {r}
+print(factanal(sc_data[,11:23], factors = 3))
+```
+
+### Apply orthogonal rotation but nothing seems to happen. 
+``` {r}
+ort_rot <- factanal(sc_data[,11:23], factors = 3, rotation = "Varimax", scores = "Bartlett")
+print(ort_rot)
+```
+
+### Orthogonal rotation
+``` {r}
+scores <- data.frame(ort_rot$scores)
+scores$gender <- sc_data$Gender
+print(scores)
+```
+
+### Mean scores per gender
+``` {r}
+scores_mean <- aggregate(. ~ gender, data = scores, mean)
+print(scores_mean)
+heatmap.2(as.matrix(scores_mean))
+```
+
+
+## Output for Q24 to Q34
+```{r}
+pipeline(sc_data[,24:34], 3, sc_data)
+```
+
+
