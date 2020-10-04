@@ -1,0 +1,303 @@
+---
+title: "Time Series Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+# 1. Prologue
+```{r library, message=FALSE, results='hide'}
+library(FitAR)
+library(forecast)
+library(tseries)
+library(gplots)
+library(aTSA)
+library(astsa)
+```
+```{r read file}
+food.df <- read.csv("time_series.csv")
+```
+
+-----
+# 2. Time Series Introduction
+## 2.1. What is Time Series? 
+A time series is a series of data points indexed (or listed or graphed) in time order. Most commonly, a time series is a sequence taken at successive equally spaced points in time. Thus it is a sequence of discrete-time data. Examples of time series are heights of ocean tides, counts of sunspots, and the daily closing value of the Dow Jones Industrial Average.
+
+```{r}
+plot(food.df[,c(1)],food.df[,c(2)], type="l", col="blue", lwd=2, xlab="weeks", ylab="sales", main="Volume sales over time")
+```
+
+## 2.2. The Concept of White Noise
+White noise is a type of time series with some particular characteristics:
+\begin{itemize}
+\item{mean $\mu$ = 0}
+\item{standard deviation $\sigma$ is constant with time}
+\item{Correlation $\rho$ between lags is 0}
+\end{itemize}
+By definition, white noise is not predictable. \textbf{Why then should we care about white noise?} Whenever we do a time series analysis, we assume that our outcome variable $y_t$ is a comination of signal (something predictable) $+$ noise (something random). If you can prove that your residuals are, in fact, white noise... It means that your model fully captured the noise and you did a good job! Hence, if you can prove that your residuals are white noise, you can prove the validity of your model. \\
+How do we test for white noise?
+\begin{itemize}
+\item{Visual checks: just look at it.}
+\item{Global versus local checks. Compare parts of the time series with the full time series}
+\item{Check Autocorrelation Function as it reveals the serial correlations for all lags}
+\item{There are more (complicated) ways to do this}
+\end{itemize}
+
+## 2.3. Autocovariance of a Stochastic (Random) Process
+### 2.3.1. Covariance
+Covariance is a measure of joint variability of two random variables. If greater values of one variable mainly correspond with greater values of the other variable - and the same holds for lesser values = the covariance is positive. If greater values of one variable correspond with lesser values of the other, covariance is negative.
+$$cov_{x,y}=\frac{\sum_{i=1}^{N}(x_{i}-\bar{x})(y_{i}-\bar{y})}{N-1}$$
+
+### 2.3.2. AutoCovariance
+Autocovariance is a function that gives the covariance of the process with itself at pairs of time points. 
+
+$$K_{XX}(t_1, t_2)  = cov[X_1, X_2]$$
+$$cov[X_1, X_2]  = E[(X_{t_1} - \mu_{t_1}) (X_{t_2} - \mu_{t_2})]$$
+$$E[(X_{t_1} - \mu_{t_1}) (X_{t_2} - \mu_{t_2})] = E[X_{t_1} X_{t_2}] - \mu_{t_1}\mu_{t_2}$$
+
+## 2.4. The Gaus-Markov Theorem & Time Series Analysis
+The Gauss-Markov theorem states that if your lienar regression model satisfies the first six classical assumptions, the ordinary least squares regression produces unbiased estimates that have the smalles variance of all possible estimators. In simpler terms, if you make sure to satisfy the 6 classical Gauss-Markov assumptions, you ordinary least square coefficients will be the best they can be! 
+\begin{itemize}
+\item{Linearity: the parameters we are estimating using the OLS method must be themselves linear}
+\item{Random: our data must have been randomly sampled from the population}
+\item{Non-collinearity: The regressors being calculated aren't perfectly correlated with each other}
+\item{Exogeneity: The regressors aren't correlated with the error term. No significant confounding  or \textbf{spurious} variables}
+\item{Homoscedacity: Variance is constant across all values of our regressors}
+\end{itemize}
+It should be noted that these assumptions differ for time series data (versus cross-sectional data).
+
+
+
+
+-----
+# 3. Stochastic Processes
+A stochastic process is a collection of random (stochastic) variables, indexed by time. The time variable can be \textbf{discrete-time} or \textbf{continuous-time}. An alternative definition: A probability distribution over a space of paths. Stochastic processes is the study of how a random variable evolves over time. 
+
+
+
+
+## 3.1. Bernoulli processes
+A Bernoulli process is a finite or infinite sequence of binary random variables. It's a discrete-time stochastic process that takes only two values, 0 and 1. It can be thought of as a repeated coin flipping process, possibly unfair but with consistent unfairness. 
+$$P(x) = \frac{n!}{k!(n - k)!} p^x q^{n-x} = \binom{n}{k} p^x q^{n-x}$$
+Where:
+\begin{itemize}
+\item{n = the number of trials}
+\item{x = the number of successes desired}
+\item{p = probability of getting a success in one trial}
+\item{q (1 - p) = the probability of getting a failure in one trial}
+\end{itemize}
+
+
+
+
+## 3.2. Ergodic Processes
+In econometrics and signal processing, a stochastic process is said to be ergodic if its statistical properties can be deduced from a single, sufficiently long, random sample of the process. The reasoning is that any collection of random samples from a process must represent the average statistical properties of the entire process. I.e., a birds-eye view of the collection of samples must represent the whole process. Conversely, \textbf{a process that is not ergodic is a process that changes erratically at an inconsistent rate.}
+
+A discrete-time random process $X[n]$ is ergodic in mean if:
+$$ \hat{\mu}_X  = \frac{1}{N} \sum{N}{n =1}\ X[n]$$
+With a sufficiently long sequence, you will gain more insight into the problem.
+
+### 3.2.1. Convergence in mean
+Convergence is when two or more things come together to form a new, whole. The convergence of a sequence $X_n$ to $X$ is to say that the distance between $X$ and $X_n$ is getting smaller and smaller. 
+A random variable $X_n$ tends in probability $p$ $\to$ to a constant $C$ if $\lim_{n \to \infty}$ of the probability that $X_n$ differs from $C$ in absolute magnitude by an amount $\varepsilon$ is equal to zero. 
+$$X_n \to^p C$$
+if...
+$$\lim_{n \to \infty} P(|X_n - C| \ge \varepsilon) = 0$$
+The concept is pretty much equaivalent to that of the textfb{Weak Law of Large Numbers} in that the probability of the predicted stochastic variable $\bar{X} \to^p \mu$. \textbf{mean square convergence} is a method of proving that this works. If a mean square of a random variable $X_n$ can convert to a constant, then a random variable $X_n$ with probability $p$ can do so too.
+$$X_n \to^{ms} C = X_n \to^p C$$
+When does a random variable $X_n$ converges mean-square to a constant? (1) The limit as $n$ tends to infinity of the expectation E of a random variable $X[n]$ is a constant C. (2) In the limit as $n$ tends to infinity of the variance of $X_n$ must be equal to 0. \\\\
+Interestingly, we don't just have to have convergence to a probability of a constant. We can actually have convergence in probability of a random variable $X$. 
+
+
+
+
+## 3.3. Markov Processes and Markov Chains
+A Markov Chain is a stochastic process, but it differs from a general stochastic process in that a Markov Chain must be \textbf{memory-less}. That is, future actions are not dependent upon the steps that led up to the present state. The only thing that matters in determining the future state is the current present state. This is called the \textbf{Markov Property}. For a random process, if we know that value taken by the process at a given time, we won't get any additional information about the future behaviour of the process by gathering more knowledge about the past.  A more mathematical definition: For any given time, the conditional distribution of future states of the process fiven present and past states, depends only on the present state and not at all on the past states \textbf{memoryless property}). The so-called \textbf{Markov Chain} is a Markov Process with \textbf{discrete time} and \textbf{discrete state space}.  
+
+For example, Laura can travel between three places: work, home, and the Eiffel tower. We will refer to this as Laura's \textbf{states}. The \textbf{transition probabilities} tell us which state Laura is likely to travel to, given where she is. Every time she travels, we call this a \textbf{transition event}.  Imagine the following probabilities:
+\begin{itemize}
+\item{current state $=$ home $|$ stay home $= 0.5$ $|$ Go Eiffel $= 0.1$ $|$ Go work $= 0.4$}
+\item{current state $=$ work  $|$ stay work $= 0.3$ $|$ Go Eiffel $= 0.1$ $|$ Go home $= 0.6$}
+\item{current state $=$ Eiffel  $|$ stay Eiffel $= 0.0$ $|$ Go Work $= 0.0$ $|$ Go home $= 1.0$}
+\end{itemize}
+Alternatively, this could be summarized in a \textbf{transition probability matrix}. Markov Chains can be \textbf{time-inhomogeneous}, which means that as time goes on (steps increase), the probability of moving from one state to the other state may change.
+
+A discrete-time stochastic process is a Markov Chain if, for t = 0, 1, 2... and all states. P(future $|$ present, past) $=$ P( future $|$ present)
+$$Pr(X_n = i_n | X_{n-1} = i_{n-1}) = Pr(X_n = i_n | X_0 = i_0, X_1 = i_1, ..., X_{n-1} = i_{n_1}) $$
+In other words, knowledge of the previous state is all that is necessary to determine the probability distribution of the current state.  
+
+
+
+
+## 3.4. Random Walk Processes
+Imagine that we have a person that starts from origin (0),  and will either go forward $p$ or backward $1-p$ based on a random probability. The walk is random in the sense that the future direction the person moves is random, and completely independent of anything in the present or past. Any previous actions say nothing about the next action. 
+
+### 3.4.1. Why AR(1) with $\varphi = 1$ are Random Walks
+A Random walk is equivalent to an AR(1) process with $\varphi = 1$. This particular stochastic process looks as follows:
+$$X_t = X_{t-1} + \varepsilon, \ where \ \varepsilon \ \approx iid(\mu = 0,\sigma^2)$$
+ We know that our time series will not be stationary due to condition of $|\varphi| < 1$ dissatisfied. Now imagine that we track back from the current position:
+ $$ X_{t-2}= X_{t-2} + \varepsilon_{t-1} + \varepsilon_t$$
+If we continue to track back all the way to the beginning...
+$$X_t = X_0 + \sum_{i=0}^{t-1} \varepsilon_{t-i}$$
+Now that we are approaching naught, we can think about the properties. Firstly, the expectation of $X_t$ is simply the expectation of $E[X_0] + \sum_{i=0}^{t-1} E[\varepsilon_{t-i}]$. Since we know that each of these $\varepsilon_t$ as a mean of 0, we can simply state that $E[X_t] = E[X_0]$ while $E[X_0] = 0$ thus our expected value is $E[X_t] = 0$. In this regard, a random walk is not non-stationary because it isn't constant in mean, as is evident by our calculations. A \textbf{random walk is non-stationary time-series because its variance and covariance are a function of time. The mean is in fact constant}. 
+
+### 3.4.2. Implications
+Given the formal equation for AR(1)...
+$$y_t = \mu + \varphi y_{t-1} + \varepsilon_t$$
+Now imagine that $\mu$ is 0 (that's always the case with time series), and $\varepsilon = 1$. Since the condition is $|\varphi| = 1$. We would end up with:
+$$y_t = y_{t-1} + \varepsilon_t$$
+THis implies that \textbf{The best prediciton of y for the next prediction is the current value of y}. The mean is constant but the variance is not! It's a random process in the sense that there is really nothing the past is able to tell us about which way the outcome variable may go. 
+
+### 3.4.3. Random Walk With Drift
+Despite random walk being non-stationary, it retains the characteristic of having a constant mean. However, there is the possibility of random walk in a time series with a trend. In this case, drift helps to deal with that by adding a constant coefficient.
+
+$$X_t = a + X_{t-1} + \varepsilon_t$$ 
+
+
+
+
+### 3.4.4 The Expected Value of a Stochastic Variable
+The expected value of a random variable X, denoted as E[X], is a generalization of the weighted average. It is intuitively the arithmetic mean of a large number of independent realizations of X. It is also known as \textbf{mean, average, expectation, mathematical expectation, or first moment.} 
+
+
+
+
+
+-----
+# 4. Stationarity
+Stationarity means that the statistical properties of a process generating a time series do not change over time. This does not mean that the series does not change over time, it’s just the way it changes does not in itself change over time. In layman’s terms: the velocity with which the time series changes over time remains constant.
+
+* Mean $\mu$ of the time series is constant over time 
+* Variance $\sigma$ of the series is constant over time
+* There should be no seasonal component
+
+Most economic and business time series are far from stationary when expressed in their original unit measurements. If the series has a stable, long-run trends and tends to revert to the trend line following a disturbance, it may be possible to stationarize it by de-trending. Such a series is said to be trend-stationary. However, de-trending still is not always sufficient to make the time-series stationary. In this case, it may be necessary to transform it into a series of season-to-season differences. We refer to such a scenario as the time series being difference-stationary. A Unit Root test can help us determine what the time series may be classified as.
+## 4.1. Unit Root
+Unit root is a feature of some stochastic processes (like random walks) that can cause problem in statistical inferencing involving time series models like AR, MA, ARMA. The coefficient $\varphi$ is a \textbf{root}. It can be interpreted as "the value of today depends on the value of yesterday and some randomness we can't predict." In case of \textbf{stationarity}, we expect this process to always converge back to the value of the constant
+The following sections will illustrate how different types of \textbf{roots} affect stationarity in a simple AR(1) model:
+
+$$\gamma_t = \mu + \varphi \gamma_{t-1} + \varepsilon_t$$
+Which can also be represented as an MA($\infty$) model:
+$$ = \varphi^ty_0 + \sum_{t-1}{k=0}\ \varphi^k + \varepsilon_{t-k}$$
+The variance of our time series: 
+$$var(q_t) = \sigma^2 [\varphi^0 + \varphi^2 + \varphi^4, ..., \varphi^{2(t-1)}$$
+The expected value of our time series:
+$$E(y_t) = \varphi^t y_0$$
+
+## 4.2. Stationarity Confirmed: $|\varphi| < 1$
+Suppose the following scenario for AR(1) process $\gamma_t = \mu + \varphi \gamma_{t-1} + \varepsilon_t$:
+$$\mu = 0$$  
+$$\varphi = 0.5$$
+$$\gamma_{t-1} = 100$$
+The value of yesterday for $\gamma$ was 100 but the $\mu$ is 0. We expect that today, the value will be around 50. Tomorrow, it will be about 25, et cetera. The series is able to \textbf{converge} if $|\varphi| < 1$.
+In light of the equation for expected value:
+$$E(y_t) = \varphi^t y_0$$
+It makes sense that if the absolute value of our coefficient $\varphi$ is smaller than 1, the eventual expected value will tend to 0 as  k tends to infinity. We assume stationarity because the mean remains steady over time lags. The effects of the past will return to the mean. There is a constant relationship between y and x (being time lags). E.g., established brands in mature markets. \textbf{any effect of the past will diminish over time, the series will return to the mean}
+
+
+
+
+## 4.3. Stationarity Refuted: $|\varphi| > 1$
+Now, suppose that $\varphi = 1.5$. The value of yesterday for $\gamma$ was 100 but the $\mu$ is 0. In light of the equation for expected value:
+$$E(y_t) = \varphi^t y_0$$
+When the exponent t tends to $\infty$, our expected value will skyrocket to $\pm \infty$. We refute stationarity because the mean changes over time lags. The effects of the past evolve over time. There is no constant relationship between y and x (being time lags). E.g., smaller brands in emerging markets. \textbf{Any effect of the past will have an explosive effect over time.}
+
+
+
+## 4.4. Stationarity refuted: (Unit root) $|\varphi| = 1$}
+A time series has a unit root if $\varphi =$ 1 or -1. The mean of the time series stays constant, however, variance $\sigma^2$ changes over time. 
+$$var(q_t) = \sigma^2 [\varphi^0 + \varphi^2 + \varphi^4, ..., \varphi^{2(t-1)}]$$
+$$var(q_t) = \sigma^2 [1^0 + 1^2 + 1^4, ..., 1^{2(t-1)}$$
+Which translates to...
+$$var(q_t) = t\sigma^2$$
+This means that variance will increase as time lags increase. Thus, variance will not be constant. \textbf{An effect in the past will become permanent.} Shocks have an explosive effect over time. It's rather rare in marketing with the exception of stocks of products. 
+
+
+
+
+## 4.5. Manually Testing for Stationarity
+We can manually calculate the coefficients. Let's look at the initial difference equation of an AR(2) model as an example: 
+$$y_t = \mu + \varphi y_{t-1} + \varphi_2 y_{t-2} \varepsilon_t$$
+This corresponds to...
+$$L^2y_t = y_{t-2}$$
+(1) Replace $y_{t-1}$ and $y_{t-2}$ with $Ly_t$ and $L^2y_t$:
+$$y_t = \mu + \varphi_1Ly_t + \varphi_2L^2y_t + \varepsilon_t$$
+(2) rewrite by collecting all terms with $y_t$ on the left hand side of the equation:
+$$y_t - \varphi_1Ly_t + \varphi_2L^2y_t = \mu + \varepsilon_t$$
+(3) factor out the $y_t$ because it appears three times:
+$$(1 - \varphi_1L - \varphi_2L^2)y_t = \mu + \varepsilon_t$$
+(4) stable or explosive? We can find out by looking at 
+$$(1 - \varphi_1L - \varphi_2L^2)$$
+(5) the characteristic polynomial equation of it is used. The best way to see what is going on is to put them next to each other. Coefficients remain exactly the same but L operators are replaced by lambdas. Also, we have reversed the powers.
+$$(1*L^0 - \varphi_1L^1 - \varphi_2L^2)$$
+$$(\lambda^2 * 1 - \varphi_1 \lambda^1 - \varphi_2\lambda^0)$$
+Where does this come from? It comes from the AR(2) model and MA($\infty$) theorem. But how does the characteristic equation tell us whether the proces $y_t$ is stable? We set it to zero to make it an actual equation:
+$$(1*L^0 - \varphi_1L^1 - \varphi_2L^2) = 0$$
+The values for $\lambda_i$ will determine whether $y_t$ is a stable (stationary) process or not. If either of these values is above 1, then the process is not stable. \textbf{$y_t$ is a stable process if $|\lambda_i|$ for all i is $< 1$. Or "inside the unit circle"}
+
+
+
+## 4.8. Using R: Case 1 (Drift no Trend)
+
+```{r }
+plot(food.df[,c(1)],food.df[,c(2)], type="l", col="blue", lwd=2, xlab="weeks", ylab="sales", main="Volume sales over time")
+```
+
+### 4.8.1. Augmented Dickey-Fuller Test (ADF)
+Dickey-Fuller test suggests that the time series has drift but no trend.
+```{r }
+adf.test(food.df[,c(2)])
+```
+
+### 4.8.2. Phillips-Perron Test
+The PP test suggests time series with drift. 
+```{r }
+pp.test(food.df[,c(5)], output = TRUE)
+```
+
+### 4.8.3. Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test
+The KPSS indicates time series with drift. 
+```{r }
+kpss.test(food.df[,c(5)], output = TRUE)
+```
+
+
+
+## 4.9. Using R: Case 2 (Drift and Trend)
+```{r }
+plot(food.df[,c(1)],food.df[,c(11)], type="l", col="red", lwd=1, xlab="weeks", ylab="sales", main="Volume Sales")
+```
+
+### 4.9.1. Augmented Dickey-Fuller Test (ADF)
+```{r }
+adf.test(food.df[,c(11)], nlag = 4, output = TRUE)
+```
+
+### 4.9.2. Phillips-Perron Test
+```{r }
+pp.test(food.df[,c(11)], output = TRUE)
+```
+
+### 4.9.3. Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test
+```{r }
+kpss.test(food.df[,c(11)], output = TRUE)
+```
+
+
+
+# 5. (AR) Autoregressive Processes (AR)
+```{r }
+plot(food.df[,c(1)],food.df[,c(2)], type="l", col="red", lwd=1, xlab="weeks", ylab="sales", main="Volume sales over time")
+```
+# 6. (MA) Moving Average Processes
+
+```{r }
+plot(food.df[,c(1)],food.df[,c(3)], type="l", col="red", lwd=1, xlab="weeks", ylab="sales", main="Volume sales over time")
+```
+
+[link](drift_trend.gif)
+
+# 7. (ARMA) Autoregressive Moving Average Processes
+# 8. (ARIMA) Integreated Autoregressive Moving Average Processes
+# 9. Seasonal Processes
+# 10. Intervention Analysis
+
