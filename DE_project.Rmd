@@ -1,0 +1,234 @@
+---
+title: "Douwe_egberts_Survey"
+author: "Michiel van Eldik"
+date: "10/6/2020"
+output: pdf_document
+---
+
+```{r, message=FALSE }
+library(qualtRics)
+library(psych)
+library(dplyr)
+library(epiDisplay)
+library(fastDummies)
+library(stringr)
+```
+
+```{r, message=FALSE }
+de.df <- read_survey("DE_1.csv")
+```
+
+***
+
+# __"How Frequently do you drink a cup of coffee on average?"__
+## __Frequency table__
+```{r, message=FALSE }
+tab1(de.df$Q27, cum.percent=TRUE, main="Frequency of drinking coffee")
+```
+
+***
+
+# __knowledge of the brand__
+## __"Have you heard of the brand Douwe Egberts?"__
+```{r, message=FALSE}
+tab1(de.df$Q6, sort.group="decreasing", cum.percent=TRUE, main="heard of DE")
+
+```
+
+## __"I have an opinion about the brand Douwe Egberts."__
+### __Frequency table__
+```{r }
+tab1(de.df$Q7, cum.percent=TRUE, main="I have an opinion on DE")
+```
+
+### __Mean__
+```{r }
+mean(de.df$Q7)
+```
+### __Standard Deviation__
+```{r }
+sd(de.df$Q7)
+```
+
+
+## __"I am well aware of the brand Douwe Egberts"__
+
+### __Frequency table__
+```{r }
+tab1(de.df$Q8, cum.percent=TRUE, main="I am well aware of DE")
+```
+
+### __Mean__
+```{r }
+mean(de.df$Q8)
+```
+### __Standard Deviation__
+```{r }
+sd(de.df$Q8)
+```
+
+## __Internal reliability__
+```{r }
+sc_awareness <- data.frame(scale(de.df$Q8), scale(de.df$Q7))
+cor.test(de.df$Q8, de.df$Q7, method="spearman")
+```
+
+***
+# __Brand Personality Associations Douwe Egberts__
+## __Dimension 1, Item 1: Sincerity__
+```{r }
+tab1(de.df$Q12_1, cum.percent=TRUE, main="Down-to-Earth")
+```
+```{r }
+mean(de.df$Q24)
+```
+## __Dimension 1, Item 2: Warmth__
+
+```{r }
+tab1(de.df$Q12_2, cum.percent=TRUE, main="Warmth")
+```
+
+## __Dimension 1 Internal Reliability__
+```{r }
+sc_d1 <- data.frame(scale(de.df$Q12_1), scale(de.df$Q12_2))
+cor.test(de.df$Q12_1, de.df$Q12_2, method="spearman")
+```
+
+
+## __Dimension 2, Item 1: Excitement__
+```{r }
+tab1(de.df$Q12_3, cum.percent=TRUE, main="Excitement")
+```
+
+## __Dimension 2, Item 2: Trendy__
+```{r }
+tab1(de.df$Q12_4, cum.percent=TRUE, main="Trendy")
+```
+
+## __Dimension 2  Internal Reliability__
+```{r }
+sc_d1 <- data.frame(scale(de.df$Q12_3), scale(de.df$Q12_4))
+cor.test(de.df$Q12_3, de.df$Q12_4, method="spearman")
+```
+
+
+## __Dimension 3, Item 1: Competence__
+```{r }
+tab1(de.df$Q12_5, cum.percent=TRUE, main="Reliable")
+```
+## __Dimension 3, Item 2: Expertise__
+```{r }
+tab1(de.df$Q12_6, cum.percent=TRUE, main="Expertise")
+```
+
+## __Dimension 3, Internal Reliability__
+```{r }
+sc_d1 <- data.frame(scale(de.df$Q12_5), scale(de.df$Q12_6))
+cor.test(de.df$Q12_5, de.df$Q12_6, method="spearman")
+```
+
+
+## __Dimension 4, Item 1: Sophistication__
+```{r }
+tab1(de.df$Q12_7, cum.percent=TRUE, main="Upper Class")
+```
+
+## __Dimension 4, Item 2: Glamorous__
+```{r }
+tab1(de.df$Q12_8, cum.percent=TRUE, main="Glamorous")
+```
+
+```{r }
+sc_d1 <- data.frame(scale(de.df$Q12_7), scale(de.df$Q12_8))
+cor.test(de.df$Q12_7, de.df$Q12_8, method="spearman")
+```
+
+# __Brand Equity from a Consumers' Perspective__
+## __"If there are other brands similar to this one in terms of quality, I would still prefer Douwe Egberts.__
+```{r }
+tab1(de.df$Q24, cum.percent=TRUE, main="Preference of DE over other, similar brands")
+```
+
+### __Mean__
+```{r }
+mean(de.df$Q24)
+```
+### __Standard Deviation__
+```{r }
+sd(de.df$Q24)
+```
+
+## __Perceived Likability of the Brand Douwe Egberts__
+
+```{r }
+tab1(de.df$Q12_9, cum.percent=TRUE, main="Likeability")
+```
+
+### __Mean__
+```{r }
+mean(de.df$Q12_9)
+```
+### __Standard Deviation__
+```{r }
+sd(de.df$Q12_9)
+```
+
+
+## __Perceived Uniqueness of the brand Douwe Egberts__
+
+```{r }
+tab1(de.df$Q12_10, cum.percent=TRUE, main="Uniqueness")
+```
+
+
+### __Mean__
+```{r }
+mean(de.df$Q12_10)
+```
+### __Standard Deviation__
+
+```{r }
+sd(de.df$Q12_10)
+```
+
+# Rank 1
+```{r }
+
+aaa <- data.frame(as.numeric(strsplit(as.character(de.df$Q39_0_GROUP), "")[[1]]))
+aaa <- cbind(aaa, (data.frame(as.numeric(strsplit(as.character(de.df$Q39_0_GROUP), "")[[2]]))))
+
+```
+
+
+
+## Summary Pie chart
+
+```{r }
+lbls <- c("Sincerity", "Excitement", "Competence", "Sophistication")
+listje <- c(
+  mean(de.df$Q12_1) +
+  mean(de.df$Q12_2),
+  mean(de.df$Q12_3) +
+  mean(de.df$Q12_4),
+  mean(de.df$Q12_5) +
+  mean(de.df$Q12_6),
+  mean(de.df$Q12_7) +
+  mean(de.df$Q12_8)
+  )
+pie(listje, labels=lbls)
+```
+
+
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
